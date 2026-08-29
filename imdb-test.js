@@ -16,111 +16,79 @@
         }
     }
 
-    function testGraphQL() {
-        show('2/2 Проверяю IMDb GraphQL...');
+    var headers = {
+        'User-Agent':
+            'Mozilla/5.0 (Linux; Android 10; Android TV) ' +
+            'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+            'Chrome/120.0.0.0 Safari/537.36',
+        'Accept':
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+    };
 
+    function requestPage(name, url, callback) {
         var network = new Lampa.Reguest();
 
-        var query =
-            'query {' +
-                ' title(id: "tt15398776") {' +
-                    ' id' +
-                    ' titleText { text }' +
-                    ' parentsGuide {' +
-                        ' categories {' +
-                            ' category { text }' +
-                            ' severity { text }' +
-                        ' }' +
-                    ' }' +
-                ' }' +
-            '}';
+        show('Проверяю ' + name + '...');
 
         network.native(
-            'https://api.graphql.imdb.com/',
+            url,
             function (result) {
                 var text = safeText(result);
 
-                console.log('GraphQL SUCCESS:', result);
+                console.log(name + ' SUCCESS:', result);
 
                 show(
-                    'GraphQL OK: ' +
+                    name + ' OK: ' +
                     text.substring(0, 180)
                 );
-            },
-            function (error) {
-                var text = safeText(error);
 
-                console.log('GraphQL ERROR:', error);
-
-                show(
-                    'GraphQL ERROR: ' +
-                    text.substring(0, 180)
-                );
-            },
-            JSON.stringify({
-                query: query
-            }),
-            {
-                type: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                if (callback) {
+                    setTimeout(callback, 4000);
                 }
-            }
-        );
-    }
-
-    function testHtml() {
-        show('1/2 Проверяю страницу IMDb...');
-
-        var network = new Lampa.Reguest();
-
-        network.native(
-            'https://www.imdb.com/title/tt15398776/parentalguide/',
-            function (result) {
-                var text = safeText(result);
-
-                console.log('HTML SUCCESS:', result);
-
-                show(
-                    'HTML OK: ' +
-                    text.substring(0, 180)
-                );
-
-                setTimeout(testGraphQL, 4000);
             },
             function (error) {
                 var text = safeText(error);
 
-                console.log('HTML ERROR:', error);
+                console.log(name + ' ERROR:', error);
 
                 show(
-                    'HTML ERROR: ' +
+                    name + ' ERROR: ' +
                     text.substring(0, 180)
                 );
 
-                setTimeout(testGraphQL, 4000);
+                if (callback) {
+                    setTimeout(callback, 4000);
+                }
             },
             false,
             {
-                headers: {
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9'
-                }
+                headers: headers
             }
         );
     }
 
     function start() {
-        setTimeout(testHtml, 2000);
+        requestPage(
+            'MAIN PAGE',
+            'https://www.imdb.com/title/tt15398776/',
+            function () {
+                requestPage(
+                    'PARENTS GUIDE',
+                    'https://www.imdb.com/title/tt15398776/parentalguide/'
+                );
+            }
+        );
     }
 
     if (window.appready) {
-        start();
+        setTimeout(start, 2000);
     } else {
         Lampa.Listener.follow('app', function (event) {
             if (event.type === 'ready') {
-                start();
+                setTimeout(start, 2000);
             }
         });
     }
